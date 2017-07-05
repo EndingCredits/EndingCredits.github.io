@@ -3,6 +3,7 @@ layout: post
 title: Set Networks - Another tool for your toolbox
 ---
 
+This posts covers a number of different techniques for deisnging models capable of dealing with unordered inputs.
 Currently WIP, all feedback welcome.
 
 >*Q*: What do recent teqniques for [neural machine translation](https://arxiv.org/abs/1706.03762), [relational reasoning](https://arxiv.org/abs/1612.00222), and [learning on point-clouds](https://arxiv.org/abs/1612.00593) have in common?
