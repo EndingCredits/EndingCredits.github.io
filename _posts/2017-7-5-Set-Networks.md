@@ -167,17 +167,11 @@ def linear_set_layer(layer_size, inputs, context=None):
     
     # Apply the context if it exists
     if context is not None:
-        # Insert a 1st dimension to enable broadcasting and convolution
-        context = tf.expand_dims9context, axis=1)
-        
-        # Get the dimension of our context vector
-        context_size = context.get_shape().as_list()[-1]
-    
-        # Create weights
-        w_c = tf.Variable(tf.random_normal((context_size, layer_size))
-        
         # Unfortunately tf doesn't support broadcasting via concat, but we can
         #  simply add the transformed context to get the same effect
+        context = tf.expand_dims(context, axis=1)
+        context_size = context.get_shape().as_list()[-1]
+        w_c = tf.Variable(tf.random_normal((context_size, layer_size))
         cont_transformed = tf.nn.conv1d(context, [w_c], stride=1, padding="SAME")
         outputs += cont_transformed
         
