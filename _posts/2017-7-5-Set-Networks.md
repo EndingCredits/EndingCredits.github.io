@@ -66,7 +66,24 @@ However, naively applying max pooling to our input tensor is unlikely to give us
 
 <!-- A note on masking -->
 >An important note is how to handle sets of different numbers of elements. This is not a problem if we are only working with one set at a time as we can set the *0*th axis to be dynamically sized, but when we want to batch multiple input tensors into a single batch tensor, this can cause problems as the inputs will have different dimensions. 
->The way around this is to pad all input tensors to a given size by using dummy input elements. It's also useful to also use a  mask to indicate which elements are real, and which ones are dummies, to ensure the dummy elements don't iterfere with the real ones under certain operations.
+>The way around this is to pad all input tensors to a given size by using dummy input elements. It's also useful to also use a  mask to indicate which elements are real, and which ones are dummies, to ensure the dummy elements don't interfere with the real ones under certain operations.
+>```python
+def batch_lists(input_lists):
+    # Takes an input list of lists (of vectors), pads each list the length of
+    #  the longest list, compiles the list into a single n x m x d array, and
+    #  returns a corresponding n x m x 1 mask.
+    max_len = 0
+    out = []; masks = []
+    for i in input_list: max_len = max(len(i),max_len)
+    for l in input_list:
+        # Zero pad output
+        out.append( np.pad(np.array(l,dtype=np.float32),
+            ((0,max_len-len(l)),(0,0)), mode='constant') )
+        # Create mask...
+        masks.append( np.pad(np.array(np.ones((len(l),1)),dtype=np.float32),
+            ((0,max_len-len(l)),(0,0)), mode='constant') )
+    return out, masks
+```
 
 #### Element embeddings
 
@@ -132,7 +149,7 @@ While tech technique described above is surprisingly powerful, it's still rather
 
 An obvious potential enhancement to our architecture would be to use some statistics about the set to help inform the transorfmation process. For example, we could first normalise our inputs by dividing by the standard deviation of the set and subtracting the mean. This is a step in the right direction, however, rather than fixed statistics and operations, it would be better if we could enable our architecture to learn these by itself.
 
-There are many ways to do this, but for now we will look at at simple extension to our set transormfarion. For this we need a netwrok which takes two inputs, `net(x,y)`. Now, given an input tensor `<v1, v2, ..., vn>` and a set statistic `s`, we can get a new tensor `<net(v1,s), net(v2,s), ..., net(vn,s)>` which can use this set-statistic to alter the transormfation. We call this type of operation a 'contextual set transformation'. contextual set transformations are a subset of set operations, and a superset of set transformations.
+There are many ways to do this, but for now we will look at at simple extension to our set transormfarion. For this we need a netwrok which takes two inputs, `net(x,y)`. Now, given an input tensor `<v1, v2, ..., vn>` and a set statistic `s`, we can get a new tensor `<net(v1,s), net(v2,s), ..., net(vn,s)>` which can use this set-statistic to alter the transormfation. We call this type of operation a 'contextual set transformation'. Contextual set transformations are a subset of set operations, and a superset of set transformations.
 
 There are many different choices for `net(x,y)`, but we will consider the simple case where `net(x,y)` is a fully connected neural network with `dim(x)+dim(y)` inputs and *d* outputs, where `x` and `y` are concatenated and the resulting vector is fed into the network.
 
@@ -185,10 +202,36 @@ But where can we get this set statistic from? We could use some generic statisti
 
 #### Building deep set networks
 
+Now that we have methods for using contexts (contextual transformations), and methods for generating contexts (set networks) we can put these together to build deep set networks.
 
+A simple example of such a network is of the form:
+```python
+def really_simple_network(inputs, mask):
+    layer_1 = tf.nn.relu(linear_set_layer(64, inputs))
+    cont_1 = tf.reduce_max(layer_1 * mask, axis=1) # Mask out dummy vectors
+    layer_2 = tf.nn.relu(linear_set_layer(64, layer_1, context=cont_1))
+    cont_2 = tf.reduce_max(layer_2 * mask, axis=1)
+    return cont_2
+```
+This simply applies an initial set network to obtain a context, which it then uses, along side the the transformed inputs (*i.e.* `layer_1`). for a second set network on the inputs.
 
+In practice, we probably want to add a few more layers to this architecture. We could do this by adding extra layers on top in the same fashion, but we can also make the two individual stages deeper by turning them into multi-layer networks. We can do this by adding extra linear layers in-between:
+```python
+def really_simple_network(inputs, mask):
+    stage_1_hidden = tf.nn.relu(linear_set_layer(64, inputs))
+    stage_1_out = tf.nn.relu(linear_set_layer(64, stage_1_hidden))
+    cont_1 = tf.reduce_max(layer_1 * mask, axis=1) # Mask out dummy vectors
+    
+    stage_2_hidden = tf.nn.relu(linear_set_layer(64, stage_1_out, context=cont_1))
+    stage_2_out = tf.nn.relu(linear_set_layer(64, stage_2_hidden))
+    cont_2 = tf.reduce_max(stage_2_out * mask, axis=1)
+    return cont_2
+```
 <!-- Defn of stages -->
+To avoid confusion, rather than call the individual component set networks networks, we will call them stages. 
+
 <!-- Notes on architecture styles -->
+Already we have many different options for building architectures, even if we fix the number of layers and layer sizes. For example, we can choose to either have many simple stages, or fewer deeper stage. Since each context layer takes two inputs, we can choose to take one of these inputs from an earlier stage of the network, for example, we could have replaced `layer_2 = tf.nn.relu(linear_set_layer(64, layer_1, context=cont_1))` with `layer_2 = tf.nn.relu(linear_set_layer(64, inputs, context=cont_1))` in our `really_simple_network`. Choosing to take the element transformation from an earlier stage  in this way can be beneficial<!-- as shown empirically -->, possibly since it allows the network to separate the job of finding a good initial context from transforming the elements.
 
 <!-- Experiment code & instructions -->
 
