@@ -68,22 +68,22 @@ However, naively applying max pooling to our input tensor is unlikely to give us
 >An important note is how to handle sets of different numbers of elements. This is not a problem if we are only working with one set at a time as we can set the *0*th axis to be dynamically sized, but when we want to batch multiple input tensors into a single batch tensor, this can cause problems as the inputs will have different dimensions. 
 >The way around this is to pad all input tensors to a given size by using dummy input elements. It's also useful to also use a  mask to indicate which elements are real, and which ones are dummies, to ensure the dummy elements don't interfere with the real ones under certain operations.
 >```python
-def batch_lists(input_lists):
-    # Takes an input list of lists (of vectors), pads each list the length of
-    #  the longest list, compiles the list into a single n x m x d array, and
-    #  returns a corresponding n x m x 1 mask.
-    max_len = 0
-    out = []; masks = []
-    for i in input_list: max_len = max(len(i),max_len)
-    for l in input_list:
-        # Zero pad output
-        out.append( np.pad(np.array(l,dtype=np.float32),
-            ((0,max_len-len(l)),(0,0)), mode='constant') )
-        # Create mask...
-        masks.append( np.pad(np.array(np.ones((len(l),1)),dtype=np.float32),
-            ((0,max_len-len(l)),(0,0)), mode='constant') )
-    return out, masks
-```
+>def batch_lists(input_lists):
+>    # Takes an input list of lists (of vectors), pads each list the length of
+>    #  the longest list, compiles the list into a single n x m x d array, and
+>    #  returns a corresponding n x m x 1 mask.
+>    max_len = 0
+>    out = []; masks = []
+>    for i in input_list: max_len = max(len(i),max_len)
+>    for l in input_list:
+>        # Zero pad output
+>        out.append( np.pad(np.array(l,dtype=np.float32),
+>            ((0,max_len-len(l)),(0,0)), mode='constant') )
+>        # Create mask...
+>        masks.append( np.pad(np.array(np.ones((len(l),1)),dtype=np.float32),
+>            ((0,max_len-len(l)),(0,0)), mode='constant') )
+>    return out, masks
+>```
 
 #### Element embeddings
 
