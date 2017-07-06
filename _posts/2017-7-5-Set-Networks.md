@@ -80,6 +80,34 @@ For each of our input vectors, we would like to transorm it in some way to work 
 We can implement a linear set transormation layer in tensorflow via `layer_out = tf.map_fn(lambda x: tf. matmul(x, w) + b), layer_in)`, however, it's better (for hardware optimisation) to use a convolution operation. These layers can be stacked (along with activation functions) to create a full network set transformation.
 <!-- `layer_out = tf.nn.conv1d(layer_in, [W_1], stride=1, padding="SAME") + b` -->
 
+Let's create a function wrapper for a simple linear set transormation layer:
+```python
+def linear_set_layer(layer_size, inputs):
+    """ Applies a linear transformation to each element in the input set.
+    
+    Args
+        layer_size: Dimension to ttransform the input vectors to
+        inputs: A tensor of dimensions batch_size x sequence_length x vector
+          dimension representing the sequences of input vectors.
+    Outputs
+        output: A tensor of dimensions batch_size x sequence_length x vector
+          dimension representing the sequences of transformed vectors.
+    """
+    
+    # Get the dimension of our input vectors
+    in_size = inputs.get_shape().as_list()[-1]
+
+    # Create our variables
+    w = tf.Variable(tf.random_normal((in_size, layer_size))
+    b = tf.Variable(tf.zeros(layer_size))
+    
+    # Apply 1D convolution to apply linear filter to each element along the 2nd
+    #  dimension and add the bias term
+    outputs = tf.nn.conv1d(inputs, [w], stride=1, padding="SAME") + b
+
+    return outputs
+```
+
 Another way of looking at this is saying we would like some class of functions of the form <!-- \{ f_k: X^k \rightarrow \times \theta \mathbf Y^k \}_{k \in \mathbf N} --> where a change in permutation to the inputs is matched by a corresponding change in permutation to the outputs, *i.e.* each <!-- f_k --> is equivariant (excluding the parameter-space). This encompasses a greater space of possible functions than applying a simple transfomration to each vector, as it allows the transformation of each vector to depend on other vectors in the set. We'll call this larget category 'set operations' where set transofrmations are a subset. These will be useful later when we discuss deep set networks, and self-attention.
 
 
@@ -108,14 +136,62 @@ There are many ways to do this, but for now we will look at at simple extension 
 
 There are many different choices for `net(x,y)`, but we will consider the simple case where `net(x,y)` is a fully connected neural network with `dim(x)+dim(y)` inputs and *d* outputs, where `x` and `y` are concatenated and the resulting vector is fed into the network.
 
-<!-- Example set tranformation layer -->
+<!-- Example set tranformation layer (unfortunately tf doesn't allow braodcasting when using concat -->
+
+Let's alter our transformation layer code to enable it to use a context:
+```python
+def linear_set_layer(layer_size, inputs, context=None):
+    """ Applies a linear transformation to each element in the input set.
+    
+    Args
+        layer_size: Dimension to ttransform the input vectors to
+        inputs: A tensor of dimensions batch_size x sequence_length x vector
+          dimension representing the sequences of input vectors.
+        Context: A tensor of dimensions batch_size x vector
+          dimension representing the context for the transformation.
+    Outputs
+        output: A tensor of dimensions batch_size x sequence_length x vector
+          dimension representing the sequences of transformed vectors.
+    """
+    
+    # Get the dimension of our input vectors
+    in_size = inputs.get_shape().as_list()[-1]
+
+    # Create our variables
+    w = tf.Variable(tf.random_normal((in_size, layer_size))
+    b = tf.Variable(tf.zeros(layer_size))
+    
+    # Apply 1D convolution to apply linear filter to each element along the 2nd
+    #  dimension and add the bias term
+    outputs = tf.nn.conv1d(inputs, [w], stride=1, padding="SAME") + b
+    
+    # Apply the context if it exists
+    if context is not None:
+        # Insert a 1st dimension to enable broadcasting and convolution
+        context = tf.expand_dims9context, axis=1)
+        
+        # Get the dimension of our context vector
+        context_size = context.get_shape().as_list()[-1]
+    
+        # Create weights
+        w_c = tf.Variable(tf.random_normal((context_size, layer_size))
+        
+        # Unfortunately tf doesn't support broadcasting via concat, but we can
+        #  simply add the transformed context to get the same effect
+        cont_transformed = tf.nn.conv1d(context, [w_c], stride=1, padding="SAME")
+        outputs += cont_transformed
+        
+    return outputs
+```
 
 But where can we get this set statistic from? We could use some generic statistic of the set (*e.g.* mean, or standard deviation), but we've already discussed a general method for representing sets with vectors: via set networks! 
 
-> While the set operations are useful for creating better embedding sto pass through pooling, there are many cases where individual element embeddings can used by themselves. For example, for semantic segmentation, the embedding of each element could correspond to the networks predicted class of that element. For simple set networks, these individual element embeddings are not too interesting by themselves, as they were produced without additional information from other elements in the set, however for deep set networks they are a lot more useful. 
+> While the set operations are useful for creating better embeddings for pooling, there are many cases where individual element embeddings can used by themselves. For example, for semantic segmentation, the embedding of each element could correspond to the networks predicted class of that element. For simple set networks, these individual element embeddings are not too interesting by themselves, as they were produced without additional information from other elements in the set, however for deep set networks they are a lot more useful. 
 
 
 #### Building deep set networks
+
+
 
 <!-- Defn of stages -->
 <!-- Notes on architecture styles -->
