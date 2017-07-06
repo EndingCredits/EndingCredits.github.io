@@ -84,5 +84,12 @@ exclude:
   - LICENSE
   - README.md
   - CNAME
+  
+defaults:
+  -
+    scope:
+      path: "" # an empty string here means all files in the project
+    values:
+      layout: "jekyll-theme-slate"
 
 theme: jekyll-theme-slate
