@@ -2,8 +2,6 @@
 # This file contains configuration flags to customize your site
 #
 
-theme: jekyll-theme-minimal
-
 # Name of your site (displayed in the header)
 name: William Woof
 
