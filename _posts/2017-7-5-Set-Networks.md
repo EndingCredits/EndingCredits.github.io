@@ -52,10 +52,10 @@ Unfortunately we're working with *tensorflow*, not *setflow* so we can't simply 
 
 #### Pooling
 
-Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![f_k: X^n \rightarrow \mathbf Y](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where <!-- X = \mathbf R^m} --> and <!-- Y = \mathbf R^{D_{OUT}} --> (in fact, we really need a sequence of functions <!-- \{ f: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N} --> as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
+Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![`f_k: X^n \rightarrow \mathbf Y`](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where ![`X = \mathbf R^m`](http://latex2png.com/output//latex_c57aa0f15ade650827acab29ac0c2b80.png) and ![`Y = \mathbf R^{D_{OUT}}`](http://latex2png.com/output//latex_e1024b96186dc05914c43f913950abc0.png) (in fact, we really need a sequence of functions [`\{ f_k: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_13d485e1d43bd55ca4aa3b87a18175f7.png) as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
 
 Fortunately some very simple candidates for these already exist, including most *tensorflow* ops beginning with `tf.reduce_`.
-By reducing along the *0*th axis these operations transform an n times m dimensional tensor into a single m-dimensional vector.
+By reducing along the 0th axis these operations transform an n by m dimensional tensor into a single m-dimensional vector.
 <!-- Pooling operations are the bread of set networks, they are what enable to turn set into vector --> Pooling operations, such as these, are the bread of set networks; they enable us to map an arbitrary sized set of vectors into a single vector of the same dimension.
 For now we will only consider max pooling, *i.e.* `tf.reduce_max`, but most of the following will also apply to alternatives such as `tf.reduce_sum`, and `tf.reduce_sum`.
 
@@ -66,7 +66,7 @@ For now we will only consider max pooling, *i.e.* `tf.reduce_max`, but most of t
 However, naively applying max pooling to our input tensor is unlikely to give us good results. For example, if our input is a set of points (a point-cloud), then max pooling will give us one half of the bounding box of all points. While this is useful information, it doesn't tell us anything about the structure of the points. We need to first transorm our input points where max pooling preserves more information about the structure of the set. Additionally, max pooling doesn't have any trainable parameters, so we need an additional trainable component to turn our architecture into a trainable model.
 
 <!-- A note on masking -->
->An important note is how to handle sets of different numbers of elements. This is not a problem if we are only working with one set at a time as we can set the *0*th axis to be dynamically sized, but when we want to batch multiple input tensors into a single batch tensor, this can cause problems as the inputs will have different dimensions. 
+>An important note is how to handle sets of different numbers of elements. This is not a problem if we are only working with one set at a time as we can set the 0th axis to be dynamically sized, but when we want to batch multiple input tensors into a single batch tensor, this can cause problems as the inputs will have different dimensions. 
 >The way around this is to pad all input tensors to a given size by using dummy input elements. It's also useful to also use a  mask to indicate which elements are real, and which ones are dummies, to ensure the dummy elements don't interfere with the real ones under certain operations.
 >```python
 >def batch_lists(input_lists):
@@ -126,7 +126,7 @@ def linear_set_layer(layer_size, inputs):
     return outputs
 ```
 
-Another way of looking at this is saying we would like some class of functions of the form <!-- \{ f_k: X^k \rightarrow \times \theta \mathbf Y^k \}_{k \in \mathbf N} --> where a change in permutation to the inputs is matched by a corresponding change in permutation to the outputs, *i.e.* each <!-- f_k --> is equivariant (excluding the parameter-space). This encompasses a greater space of possible functions than applying a simple transfomration to each vector, as it allows the transformation of each vector to depend on other vectors in the set. We'll call this larget category 'set operations' where set transofrmations are a subset. These will be useful later when we discuss deep set networks, and self-attention.
+Another way of looking at this is saying we would like some class of functions of the form ![`\{ f_k: X^k \times \theta \rightarrow \mathbf Y^k \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_21ebd3e702c6d6652329339efe60463b.png) where a change in permutation to the inputs is matched by a corresponding change in permutation to the outputs, *i.e.* each ![`f_k`](http://latex2png.com/output//latex_47240a5c231d05eabaf2eb8a0c477efa.png) is equivariant (excluding the parameter-space). This encompasses a greater space of possible functions than applying a simple transfomration to each vector, as it allows the transformation of each vector to depend on other vectors in the set. We'll call this larget category 'set operations' where set transofrmations are a subset. These will be useful later when we discuss deep set networks, and self-attention.
 
 
 #### Putting everything together
@@ -142,8 +142,7 @@ We can now combine this set operation with our pooling operation to obtain a set
 ### Deep set networks
 
 While tech technique described above is surprisingly powerful, it's still rather primitive: Elements are naiveley embedded into a higher dimensional space and then pooled to get a single representation. <!-- This can (and often does) give perfectly good results on a variety of task, however it can prove brittle in certain situation, for example, on point clouds with extreme variances in scale. -->
-
-<!-- While the set networks above may be deep in terms of a number of individual layers, they are shallow in that they only produce a single set representation. We would like networks that produce multiple sucessively more refined set representations, *i.e.* deep set networks. -->
+While the set networks above may be deep in terms of a number of individual layers, they are shallow in that they only produce a single set representation. We would like networks that produce multiple sucessively more refined set representations, *i.e.* deep set networks.
 
 
 #### Enhanced element embeddings
@@ -154,8 +153,7 @@ There are many ways to do this, but for now we will look at at simple extension 
 
 There are many different choices for `net(x,y)`, but we will consider the simple case where `net(x,y)` is a fully connected neural network with `dim(x)+dim(y)` inputs and *d* outputs, where `x` and `y` are concatenated and the resulting vector is fed into the network.
 
-<!-- Example set tranformation layer (unfortunately tf doesn't allow braodcasting when using concat -->
-
+<!-- Example set tranformation layer -->
 Let's alter our transformation layer code to enable it to use a context:
 ```python
 def linear_set_layer(layer_size, inputs, context=None):
@@ -229,10 +227,10 @@ def really_simple_network(inputs, mask):
     return cont_2
 ```
 <!-- Defn of stages -->
-To avoid confusion, rather than call the individual component set networks networks, we will call them stages. 
+To avoid confusion, rather than call the individual component set networks networks, we will call them stages. Broadly speaking, a stage is a combination of layers where the lowest layer takes a context, but the layers above it (up to the next stage) do not.
 
 <!-- Notes on architecture styles -->
-Already we have many different options for building architectures, even if we fix the number of layers and layer sizes. For example, we can choose to either have many simple stages, or fewer deeper stage. Since each context layer takes two inputs, we can choose to take one of these inputs from an earlier stage of the network, for example, we could have replaced `layer_2 = tf.nn.relu(linear_set_layer(64, layer_1, context=cont_1))` with `layer_2 = tf.nn.relu(linear_set_layer(64, inputs, context=cont_1))` in our `really_simple_network`. Choosing to take the element transformation from an earlier stage  in this way can be beneficial<!-- as shown empirically -->, possibly since it allows the network to separate the job of finding a good initial context from transforming the elements.
+Already we have many different options for building architectures, even if we fix the number of layers and layer sizes. For example, we can choose to either have many simple stages, or fewer deeper stage. Since each context layer takes two inputs, we can choose to take one of these inputs from an earlier stage of the network, for example, we could have replaced `layer_2 = tf.nn.relu(linear_set_layer(64, layer_1, context=cont_1))` with `layer_2 = tf.nn.relu(linear_set_layer(64, inputs, context=cont_1))` in our `really_simple_network`. In my own experiments I found that taking the element transformation from an earlier stage in this way can be beneficial<!-- as shown empirically -->, possibly since it allows the network to separate the job of finding a good initial context from transforming the elements.
 
 <!-- Experiment code & instructions -->
 
