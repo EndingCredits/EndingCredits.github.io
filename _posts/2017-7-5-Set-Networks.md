@@ -15,7 +15,7 @@ A deep-learningomancer's toolkit is seemingly endless. Simple spells, such as ba
 Needless to say, the number of different model architectures is also collosal.
 However, broadly speaking, we can divide most commonly used deep learning models into one of three categories: those designed to operate on feature vectors (*e.g.* fully connected), those designed to operate on tensor-structured data such as images, or audio (*e.g.* CNNs), and those designed to work on sequential data (*e.g.* RNNs).
 
-While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommision: models designed to operate on sets. Enter the set network!
+While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommission: models designed to operate on sets. Enter the set network!
 
 <!-- Why sets?
        Appear in lots of places.
@@ -36,6 +36,7 @@ While this is far from a comprehensive classification of all models (doubtless l
        Attempt to unify different ideas.
        Own notes which may be useful to others.
        Code (in python and tf) so other people can get started.
+       Not an attempt to describe all possible types.
      -->
 <!-- Table of contents -->
 
@@ -51,16 +52,16 @@ Unfortunately we're working with *tensorflow*, not *setflow* so we can't simply 
 
 #### Pooling
 
-Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function <!-- f_k: X^n \rightarrow \mathbf Y, where X = \mathbf R^m} and Y = \mathbf R^{D_{OUT}} --> (in fact, we really need a sequence of functions <!-- \{ f: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N} --> as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
+Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![f_k: X^n \rightarrow \mathbf Y](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where <!-- X = \mathbf R^m} --> and <!-- Y = \mathbf R^{D_{OUT}} --> (in fact, we really need a sequence of functions <!-- \{ f: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N} --> as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
 
 Fortunately some very simple candidates for these already exist, including most *tensorflow* ops beginning with `tf.reduce_`.
-By reucing along the *0*th axis these operations transform an n times m dimensional tensor into a single m-dimensional vector.
+By reducing along the *0*th axis these operations transform an n times m dimensional tensor into a single m-dimensional vector.
+<!-- Pooling operations are the bread of set networks, they are what enable to turn set into vector --> Pooling operations, such as these, are the bread of set networks; they enable us to map an arbitrary sized set of vectors into a single vector of the same dimension.
 For now we will only consider max pooling, *i.e.* `tf.reduce_max`, but most of the following will also apply to alternatives such as `tf.reduce_sum`, and `tf.reduce_sum`.
 
 <!--  Notes on how to compose from simple arithmentic functions.
-      In fact we can devise such an function using any associative symmetric operation. -->
-      
-<!-- Pooling operations are the bread of set networks, they are what enable to turn set into vector -->
+      In fact we can devise such an function using any associative symmetric operation.
+      Given an associative symmetric operation on pairs of vectors, we can form a pooling operation by applying ... -->
 
 However, naively applying max pooling to our input tensor is unlikely to give us good results. For example, if our input is a set of points (a point-cloud), then max pooling will give us one half of the bounding box of all points. While this is useful information, it doesn't tell us anything about the structure of the points. We need to first transorm our input points where max pooling preserves more information about the structure of the set. Additionally, max pooling doesn't have any trainable parameters, so we need an additional trainable component to turn our architecture into a trainable model.
 
