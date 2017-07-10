@@ -17,19 +17,31 @@ However, broadly speaking, we can divide most commonly used deep learning models
 
 While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommission: models designed to operate on sets. Enter the set network!
 
+
+### Introduction
+
 <!-- Why sets?
        Appear in lots of places.
        (Seq2Seq for sets)
        Alternative to sequences.
        Multi-instance learning.
+       Many places where a set network is an obvious 
+       Yeilding SOTA results in certain domains.
      -->
+     
+
+#### Why this post?
 <!-- Why this post?
        Used in lots of places, but no overarching consensus.
        Even closely related papers miss this link.
          Papers don't mention trying different layer types
-       Many places where a set network is an obvious 
-       Yeilding SOTA results in certain domains.
      -->
+As it turns out, a variety of different researchers have already run into, and managed to solve this problem in a variety of different ways. However, in most instances there seems to be little awarness of others' proposed solutions and most approaches seem to be developed largely independently (*e.g.* [Deep Sets](https://arxiv.org/abs/1611.04500) and [Pointnet](https://arxiv.org/abs/1612.00593) both employ the same novel approach to 3D object classification on the same dataset).
+Furthermore, most approaches are largely based on the same principles (*i.e.* the deep set network we describe below), but many also feature unique innovations (as well as small tweaks and optimisations) that could also be applied to other problems.
+
+I strongly feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Unfortunately a lack of awareness of these techniques means that opportunities to use set networks are often missed (a good example might be in [matching networks](https://arxiv.org/abs/1606.04080) a bi-directional RNN, instead of a set network, is used to encode elements of a set). Even where set networks are used, many solutions may be potentially improved by exploiting techniques from other approaches.
+
+#### What this post is
 <!-- What this post is?
        Definition of set network
        Summary from other papers (in particular deep sets).
@@ -38,7 +50,16 @@ While this is far from a comprehensive classification of all models (doubtless l
        Code (in python and tf) so other people can get started.
        Not an attempt to describe all possible types.
      -->
-<!-- Table of contents -->
+Aside from raising awareness, this post is an attempt to collate information about all these different approaches in a single place, but also a practical guide to implementing set networks. Code snippets in python/tensorflow will be included, demonstrating how the various building blocks can be implemented, as well as example experimental code.
+I'll also be including some of my own notes.
+
+Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to implementing such networks in a practical settings. For more details overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
+
+<!-- Table of contents
+       In the first couple of sections I will present what I consider to be the core deep set network, which is the basis of most (but not all) approaches. 
+       In the next section I will cover some of the other techniques which have been used by researchers.
+-->
+
 
 <!-- Feedback, notes, and acknowledgements -->
 
@@ -133,7 +154,10 @@ Another way of looking at this is saying we would like some class of functions o
 
 We can now combine this set operation with our pooling operation to obtain a set representation. While we could use this set representation directly, personal experience suggests that it's better to feed this representation into a final fully connected network (presumably as this allows the set operation to focus on preserving as much information as possible when pooled).
 
-<!-- A note on why max pooling -->
+<!-- A note on why max pooling 
+     If we model our embedding function as a map from our element to a random vector, we can treat the output of our pooling operation as a kild of bloom filter.
+     A bloom filter is...
+     In fact, with max pooling we can achieve even better results than a normal bloom filter-->
 
 <!-- Experiment code & instructions -->
 <!-- Example set tranformation layer -->
@@ -235,24 +259,30 @@ Already we have many different options for building architectures, even if we fi
 <!-- Experiment code & instructions -->
 
 
+
+### The Toolbox
+
 #### Other layer types
 
 This section will cover two alternatives to the general set transofmration layer: the set layer used by [Ravanbakhsh et al.](https://arxiv.org/abs/1611.04500) and the T-net of [Qi et al.](https://arxiv.org/abs/1612.00593).
 
 
-<!-- ### Summary -->
-
-
-### Other techniques
-
 #### Self attention
 
 This section will cover self-attention as used in Deepmind's All You Need is Attention paper
+
 
 #### Heirarchical set networks
 
 This section will cover applying set-networks to sets of sets (by partitioning sets) as usied in [Pointnet++](https://arxiv.org/abs/1706.02413) and other places.
 
-#### Different element lengths
 
-This section will cover some of my notes on dealing with sets which consist of vectors of different lengths.
+### Misc
+
+#### List of papers
+* Neural Statistician
+
+#### To-do list / wishlist
+* Empirical study on different tools for different tasks
+* Note on activation functions and optimiser type
+* Notes on dealing with sets which consist of vectors of different lengths.
