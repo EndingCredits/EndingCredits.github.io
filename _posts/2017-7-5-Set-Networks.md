@@ -6,19 +6,21 @@ title: Set Networks - Another tool for your toolbox
 This posts covers a number of different techniques for deisnging models capable of dealing with unordered inputs.
 Currently WIP, all feedback welcome.
 
->*Q*: What do recent teqniques for [neural machine translation](https://arxiv.org/abs/1706.03762), [relational reasoning](https://arxiv.org/abs/1612.00222), and [learning on point-clouds](https://arxiv.org/abs/1612.00593) have in common?
+>*Q*: What do recent techniques for [neural machine translation](https://arxiv.org/abs/1706.03762), [relational reasoning](https://arxiv.org/abs/1612.00222), and [learning on point-clouds](https://arxiv.org/abs/1612.00593) have in common?
 >
->*A*: they all use set networks!
+>*A*: They all use set networks!
 
-A deep-learningomancer's toolkit is seemingly endless. Simple spells, such as batch-normalisation and skip connections are joined by arcane magic such as  (not to mention the six hundred and sixty six different species of GAN).
+A deep-learning-o-mancer's toolkit is seemingly endless. Simple spells, such as batch-normalisation and skip connections are joined by arcane magic such as  (not to mention the six hundred and sixty six different species of GAN).
 
 Needless to say, the number of different model architectures is also collosal.
 However, broadly speaking, we can divide most commonly used deep learning models into one of three categories: those designed to operate on feature vectors (*e.g.* fully connected), those designed to operate on tensor-structured data such as images, or audio (*e.g.* CNNs), and those designed to work on sequential data (*e.g.* RNNs).
 
-While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommission: models designed to operate on sets. Enter the set network!
+While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommission: models designed to operate on sets.
+
+Enter the set network!
 
 
-### Introduction
+## Introduction
 
 <!-- Why sets?
        Appear in lots of places.
@@ -36,8 +38,12 @@ While this is far from a comprehensive classification of all models (doubtless l
        Even closely related papers miss this link.
          Papers don't mention trying different layer types
      -->
+
+     
 As it turns out, a variety of different researchers have already run into, and managed to solve this problem in a variety of different ways. However, in most instances there seems to be little awarness of others' proposed solutions and most approaches seem to be developed largely independently (*e.g.* [Deep Sets](https://arxiv.org/abs/1611.04500) and [Pointnet](https://arxiv.org/abs/1612.00593) both employ the same novel approach to 3D object classification on the same dataset).
 Furthermore, most approaches are largely based on the same principles (*i.e.* the deep set network we describe below), but many also feature unique innovations (as well as small tweaks and optimisations) that could also be applied to other problems.
+
+
 
 I strongly feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Unfortunately a lack of awareness of these techniques means that opportunities to use set networks are often missed (a good example might be in [matching networks](https://arxiv.org/abs/1606.04080) a bi-directional RNN, instead of a set network, is used to encode elements of a set). Even where set networks are used, many solutions may be potentially improved by exploiting techniques from other approaches.
 
@@ -60,10 +66,10 @@ Rather than an authorative overview of set networks (which I have neither the ti
        In the next section I will cover some of the other techniques which have been used by researchers.
 -->
 
-
 <!-- Feedback, notes, and acknowledgements -->
 
-### The simple set network
+
+## The simple set network
 <!-- Definition of set network: equivariance and symmetry -->
 Just as CNNs operate over fixed-size vectors arranged into a grid pattern, and RNNs operate over fixed-size vectors arranged into a sequence, we are interested in models that can operate over fixed-size vectors organised a set.
 
@@ -163,7 +169,7 @@ We can now combine this set operation with our pooling operation to obtain a set
 <!-- Example set tranformation layer -->
 
 
-### Deep set networks
+## Deep set networks
 
 While tech technique described above is surprisingly powerful, it's still rather primitive: Elements are naiveley embedded into a higher dimensional space and then pooled to get a single representation. <!-- This can (and often does) give perfectly good results on a variety of task, however it can prove brittle in certain situation, for example, on point clouds with extreme variances in scale. -->
 While the set networks above may be deep in terms of a number of individual layers, they are shallow in that they only produce a single set representation. We would like networks that produce multiple sucessively more refined set representations, *i.e.* deep set networks.
@@ -260,7 +266,7 @@ Already we have many different options for building architectures, even if we fi
 
 
 
-### The Toolbox
+## The Toolbox
 
 #### Other layer types
 
@@ -269,8 +275,20 @@ This section will cover two alternatives to the general set transofmration layer
 
 #### Self attention
 
-This section will cover self-attention as used in Deepmind's All You Need is Attention paper
+Recently Google published a paper titled [Attention Is All You Need](https://arxiv.org/abs/1706.03762) demonstrating a novel method for machine translation that demonstrated state-of-the-art performance on an English-German translation task. What was interesting about their approach is that they completely forwent any kind of sequential model, such as an RNN (this coming not long after facebook announced a [CNN model for machine translation](https://code.facebook.com/posts/1978007565818999/a-novel-approach-to-neural-machine-translation/)). In fact, it turns out that the model Google used (the transformer network) is actually a kind of set network (with one caveat).
 
+Unlike the set networks described here, the transformer network doesn't use any kind of global pooling. Instead it relies on a mechanism called 'self attention'. Rather than generating a global context, which is applied to all elements, each element produces its own context based on other elements in the set. This is done by using an attention mechanism, where each element controls how strongly other elements in the set contribute to its own context. Attention mechanism are often used in sequence-to-sequence tasks where the output elements are allowed to attend to the input elements. What transformer net does is also allow input, and output elements to attend to themselves.
+
+This is done as follows:
+1.) Each element produces a key, and a value which are fixed sized vectors.
+2.) Each element also produces a query, which is a fixed sized vector the same size as the key.
+3.) For each pair of elements `x_i` and `x_j` we generate a weight `w_i_j` by taking the dot product of the query vector `x_i_q` of `x_i` and the key vector `x_j_k` of `x_j` (and then passing it through a softmax). This value `w_i_j` corresponds to how much the element `x_i` 'pays attention' to `x_j`.
+4.) For each element `x_i`, we produce a context `c_i` by multiplying the values of all elements by the corresponding weight `w_i_j`, and summing them together, *i.e.* `c_i = sum(w_i_j * x_j_v)`.
+
+<!-- Code -->
+
+<!-- Max pooiling as global attention -->
+In many ways, self attention can be considered an extension of global pooling. In fact, if we use sum pooling, then this is equivalent to using self-attention with all attended weights set to 1.
 
 #### Heirarchical set networks
 
