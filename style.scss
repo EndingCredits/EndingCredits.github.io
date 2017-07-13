@@ -18,7 +18,7 @@ html {
 }
 
 body {
-	background: $white;
+  background: $white;
   font: 18px/1.4 $helvetica;
   color: $darkGray;
 }
@@ -269,6 +269,12 @@ nav {
     text-transform: uppercase;
     font-size: 15px;
   }
+	
+  code {
+    font-size: 10px;
+    background: $lightGray;
+  }
+
 }
 
 .wrapper-footer {
