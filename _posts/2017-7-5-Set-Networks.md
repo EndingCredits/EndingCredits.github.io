@@ -3,7 +3,7 @@ layout: post
 title: Set Networks - Another tool for your toolbox
 ---
 
-This posts covers a number of different techniques for deisnging models capable of dealing with unordered inputs.
+This post covers a number of different techniques for designing models capable of dealing with sequences of unordered inputs.
 Currently WIP, all feedback welcome.
 
 >*Q*: What do recent techniques for [neural machine translation](https://arxiv.org/abs/1706.03762), [relational reasoning](https://arxiv.org/abs/1612.00222), and [learning on point-clouds](https://arxiv.org/abs/1612.00593) have in common?
@@ -49,7 +49,7 @@ This lack of awareness means researchers waste time reinventing the wheel, and o
 Furthermore, opportunities to use set networks are often missed: a good example might be in [matching networks](https://arxiv.org/abs/1606.04080) where a bi-directional RNN, instead of a set network, is used to encode elements of an input set.
 
 With the speed of development of Deep Learning, it is not that surprising that these techniques have failed to land on the collective Deep Learning radar. There are a plethora of emerging ideas equally deserving of our attention.
-However, I perosnally feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Hence, I would like to take this opportunity to try and raise some awareness of their existance, and attempt to collate some of the various sources of information into a more digestible format.
+However, I personally feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Hence, I would like to take this opportunity to try and raise some awareness, and attempt to collate some of the various sources of information into a more digestible format.
 
 
 #### What this post is
@@ -64,9 +64,9 @@ However, I perosnally feel that set networks, of all their various shapes and gu
 
 Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to the conectps and a guide to implementing such networks in a practical setting. For more details overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
 
-
-Throughout this post I'll be including code snippets (in my preferred combination of python/tensorflow) demonstrating how various building blocks can be implemented. Sometime in the future, I hope to accompany this with some example esperimental code (in the meantime, [this poorly documented repository](https://github.com/EndingCredits/EmbeddingNetwork) can be reffered to in case of emergency).
+Throughout this post I'll be including code snippets (in my preferred combination of python/tensorflow) demonstrating how various building blocks can be implemented. Sometime in the future, I hope to accompany this with some example esperimental code (in the meantime, [this poorly documented repository](https://github.com/EndingCredits/EmbeddingNetwork) can be referred to in an emergency).
 I'll also be including some of my own notes, both practical and theoretical. These can be found in the grey textboxes.
+
 
 <!-- Table of contents
        In the first couple of sections I will present what I consider to be the core deep set network, which is the basis of most (but not all) approaches. 
@@ -74,7 +74,7 @@ I'll also be including some of my own notes, both practical and theoretical. The
 -->
 
 <!-- Feedback, notes, and acknowledgements -->
-
+This post is very much a work in progress, and will be continually updated for the forseable future. I have tried to make it as easy as possible to read and understand , but I encourage readers to share feedback on how I can improve this further. Any further questions and/or suggestions are more than welcome. You can contact me at awwoof \<@\> hotmail.com.
 
 ## The simple set network
 <!-- Definition of set network: equivariance and symmetry -->
