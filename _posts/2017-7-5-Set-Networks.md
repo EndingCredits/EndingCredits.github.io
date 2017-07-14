@@ -74,7 +74,7 @@ I'll also be including some of my own notes, both practical and theoretical. The
 -->
 
 <!-- Feedback, notes, and acknowledgements -->
-This post is very much a work in progress, and will be continually updated for the forseable future. I have tried to make it as easy as possible to read and understand , but I encourage readers to share feedback on how I can improve this further. Any further questions and/or suggestions are more than welcome. You can contact me at awwoof \<@\> hotmail.com.
+This post is very much a work in progress, and will be continually updated for the forseable future. I have tried to make it as easy as possible to read and understand , but I encourage readers to share feedback on how I can improve this further. Any further questions and/or suggestions are more than welcome.
 
 ## The simple set network
 <!-- Definition of set network: equivariance and symmetry -->
