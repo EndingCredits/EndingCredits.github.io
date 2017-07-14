@@ -11,7 +11,6 @@ Currently WIP, all feedback welcome.
 >*A*: They all use set networks!
 
 A deep-learning-o-mancer's toolkit is seemingly endless. Simple spells, such as batch-normalisation and skip connections are joined by arcane magic such as  (not to mention the six hundred and sixty six different species of GAN).
-
 Needless to say, the number of different model architectures is also collosal.
 However, broadly speaking, we can divide most commonly used deep learning models into one of three categories: those designed to operate on feature vectors (*e.g.* fully connected), those designed to operate on tensor-structured data such as images, or audio (*e.g.* CNNs), and those designed to work on sequential data (*e.g.* RNNs).
 
@@ -38,14 +37,20 @@ Enter the set network!
        Even closely related papers miss this link.
          Papers don't mention trying different layer types
      -->
+Sometimes we want to work with input data given as sets, for example a list of possible binding sites for a protein, or a set of point in a point cloud. Even when data isn't given explicitly as a set, it can often be useful to represent it as one, *e.g.* we can specify a graph as a set of edges and vertices. But how do we feed a set into a neural network?
 
-     
+> In fact the problem of classifying sets has already been studied extensively via the field Multiple-Instance Learning (MIL). MIL is typically defined as a classification task where the objective is to learn a mapping from sets (known as bags) of elements to a single label. However, MIL also includes the assumption that bag labels are dependent only on some function of hidden element labels, *e.g.* a bag label is y only if it contains an element with label y. We are interested in more general problems where it may not be possible to determine the set label by looking at each element individually.
+
+An obvious first step is to treat the set as a sequence (by assigning an arbitrary ordering) and input it into a squential model. However, the choice or ordering can have a [big impact on performance](https://arxiv.org/abs/1511.06391), and sequential models ar poor at modelling long-rage dependencies, so if two closely related elements end up at opposite ends of the sequence, their relationship may be missed. Ideally we would like a similar model where the output is independent of the order of the inputs, that is, a set network. ut what would such a model look like?
+
 As it turns out, a variety of different researchers have already run into, and managed to solve this problem in a variety of different ways. However, in most instances there seems to be little awarness of others' proposed solutions and most approaches seem to be developed largely independently (*e.g.* [Deep Sets](https://arxiv.org/abs/1611.04500) and [Pointnet](https://arxiv.org/abs/1612.00593) both employ the same novel approach to 3D object classification on the same dataset).
-Furthermore, most approaches are largely based on the same principles (*i.e.* the deep set network we describe below), but many also feature unique innovations (as well as small tweaks and optimisations) that could also be applied to other problems.
+Most of these approaches are largely based on the same principles (*i.e.* the deep set network we describe below), but many also feature unique innovations (as well as small tweaks and optimisations) that could also be applied to other problems.
+This lack of awareness means researchers waste time reinventing the wheel, and often miss useful tricks that might help improve their approaches.
+Furthermore, opportunities to use set networks are often missed: a good example might be in [matching networks](https://arxiv.org/abs/1606.04080) where a bi-directional RNN, instead of a set network, is used to encode elements of an input set.
 
+With the speed of development of Deep Learning, it is not that surprising that these techniques have failed to land on the collective Deep Learning radar. There are a plethora of emerging ideas equally deserving of our attention.
+However, I perosnally feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Hence, I would like to take this opportunity to try and raise some awareness of their existance, and attempt to collate some of the various sources of information into a more digestible format.
 
-
-I strongly feel that set networks, of all their various shapes and guises, are an excellent tool for a variety of tasks, and are worthy of a place in the 'core' deep learning toolkit alongside CNNs and RNNs. Unfortunately a lack of awareness of these techniques means that opportunities to use set networks are often missed (a good example might be in [matching networks](https://arxiv.org/abs/1606.04080) a bi-directional RNN, instead of a set network, is used to encode elements of a set). Even where set networks are used, many solutions may be potentially improved by exploiting techniques from other approaches.
 
 #### What this post is
 <!-- What this post is?
@@ -56,10 +61,12 @@ I strongly feel that set networks, of all their various shapes and guises, are a
        Code (in python and tf) so other people can get started.
        Not an attempt to describe all possible types.
      -->
-Aside from raising awareness, this post is an attempt to collate information about all these different approaches in a single place, but also a practical guide to implementing set networks. Code snippets in python/tensorflow will be included, demonstrating how the various building blocks can be implemented, as well as example experimental code.
-I'll also be including some of my own notes.
 
-Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to implementing such networks in a practical settings. For more details overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
+Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to the conectps and a guide to implementing such networks in a practical setting. For more details overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
+
+
+Throughout this post I'll be including code snippets (in my preferred combination of python/tensorflow) demonstrating how various building blocks can be implemented. Sometime in the future, I hope to accompany this with some example esperimental code (in the meantime, [this poorly documented repository](https://github.com/EndingCredits/EmbeddingNetwork) can be reffered to in case of emergency).
+I'll also be including some of my own notes, both practical and theoretical. These can be found in the grey textboxes.
 
 <!-- Table of contents
        In the first couple of sections I will present what I consider to be the core deep set network, which is the basis of most (but not all) approaches. 
@@ -302,5 +309,5 @@ This section will cover applying set-networks to sets of sets (by partitioning s
 
 #### To-do list / wishlist
 * Empirical study on different tools for different tasks
-* Note on activation functions and optimiser type
+* Note on activation functions and optimiser type (adamax)
 * Notes on dealing with sets which consist of vectors of different lengths.
