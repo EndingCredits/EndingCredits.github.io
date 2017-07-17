@@ -86,7 +86,7 @@ Unfortunately we're working with *tensorflow*, not *setflow* so we can't simply 
 
 #### Pooling
 
-Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![`f_k: X^n \rightarrow \mathbf Y`](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where ![`X = \mathbf R^m`](http://latex2png.com/output//latex_c57aa0f15ade650827acab29ac0c2b80.png) and ![`Y = \mathbf R^{D_{OUT}}`](http://latex2png.com/output//latex_e1024b96186dc05914c43f913950abc0.png) (in fact, we really need a sequence of functions [`\{ f_k: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_13d485e1d43bd55ca4aa3b87a18175f7.png) as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
+Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![`f_k: X^n \rightarrow \mathbf Y`](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where ![`X = \mathbf R^m`](http://latex2png.com/output//latex_c57aa0f15ade650827acab29ac0c2b80.png) and ![`Y = \mathbf R^{D_{OUT}}`](http://latex2png.com/output//latex_e1024b96186dc05914c43f913950abc0.png) (in fact, we really need a sequence of functions ![`\{ f_k: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_13d485e1d43bd55ca4aa3b87a18175f7.png) as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
 
 Fortunately some very simple candidates for these already exist, including most *tensorflow* ops beginning with `tf.reduce_`.
 By reducing along the 0th axis these operations transform an n by m dimensional tensor into a single m-dimensional vector.
@@ -178,7 +178,7 @@ We can now combine this set operation with our pooling operation to obtain a set
 
 ## Deep set networks
 
-While tech technique described above is surprisingly powerful, it's still rather primitive: Elements are naiveley embedded into a higher dimensional space and then pooled to get a single representation. <!-- This can (and often does) give perfectly good results on a variety of task, however it can prove brittle in certain situation, for example, on point clouds with extreme variances in scale. -->
+While tech technique described above is surprisingly powerful, it's still rather primitive: Elements are naiveley embedded into a higher dimensional space and then pooled to get a single representation. While this can (and often does) give perfectly good results on a variety of task, it can prove brittle in certain situations, for example, on point clouds with extreme variantions in scale.
 While the set networks above may be deep in terms of a number of individual layers, they are shallow in that they only produce a single set representation. We would like networks that produce multiple sucessively more refined set representations, *i.e.* deep set networks.
 
 
@@ -278,6 +278,74 @@ Already we have many different options for building architectures, even if we fi
 #### Other layer types
 
 This section will cover two alternatives to the general set transofmration layer: the set layer used by [Ravanbakhsh et al.](https://arxiv.org/abs/1611.04500) and the T-net of [Qi et al.](https://arxiv.org/abs/1612.00593).
+
+So far we have been combining our elements with our context in a very simple way: merely concatenating them together. This method is pretty robust to a number of different tasks (at least the ones I've tried it on), but in many cases there may be better ways of combining them. We will cover a couple of useful alternatives for classifying 3D point clouds: an optimisation used by [Ravanbakhsh et al.](https://arxiv.org/abs/1611.04500) and the T-net 
+
+
+##### Ravanbakhsh Layer
+
+One disadvantage of concatenation is that it increases the effective layer size. This increases computational complexity of the model but also, more importantly, increases the number of parameters. While the conventional wisdom that more parameters = more overfitting (seems to not be a hard and fast rule in deep learning)[https://arxiv.org/abs/1611.03530], the following optimisation certainly seems to be a useful simplification.
+
+Ravanbakhsh et al.'s alteration is to use a weight sharing scheme where the weights of the context are the negative of the weights of the elements (note that this requires the element size and context size to be the same). This is the same as subtracting the context from the input. Since they use the max pool of the inputs as their contexts, the result is a sort of normalisation.
+
+```python
+def ravanbakhsh_layer(layer_size, inputs, mask):
+
+    # Create our variables
+    in_size = inputs.get_shape().as_list()[-1]
+    w = tf.Variable(tf.random_normal((in_size, layer_size))
+    b = tf.Variable(tf.zeros(layer_size))
+    
+    # Get our context (keep dims is for broadcasting
+    context = tf.reduce_max(layer * mask, axis=1, keep_dims=true)
+    
+    # Apply context to inputs
+    inputs = inputs - context
+    
+    # Apply transformation
+    outputs = tf.nn.conv1d(inputs, [w], stride=1, padding="SAME") + b
+        
+    return outputs
+```
+
+##### T-net
+
+Taking the idea of using a set statistic to transform points a bit more literally, Qi et al.'s T-net applies a straightforwards matrix multiplication to each point. Additionally, instead of using a simple pool of elements for their context (and since they require a vector of size n x n) they transform their context through a separate network.
+
+```python
+def t_net_layer(inputs, mask):
+    in_size = inputs.get_shape().as_list()[-1]
+    
+    # Set part of building transform
+    transform = inputs
+    transform = tf.nn.relu(linear_set_layer(64, transform))
+    transform = tf.nn.relu(linear_set_layer(128, transform))
+    transform = tf.nn.relu(linear_set_layer(1024, transform))
+
+    # Variables
+    w_1 = tf.Variable(tf.random_normal((1024, 512))
+    b_1 = tf.Variable(tf.zeros(512))
+    w_2 = tf.Variable(tf.random_normal((512, 256))
+    b_2 = tf.Variable(tf.zeros(256))
+    w_3 = tf.Variable(tf.random_normal((256, in_size*in_size))
+    b_3 = tf.Variable(tf.zeros(in_size*in_size))
+    
+    # Linear part of building transform
+    transform = tf.reduce_max(transform * mask, axis=1)
+    transform = tf.nn.relu(tf.matmul(transform, w_1) + b_1)
+    transform = tf.nn.relu(tf.matmul(transform, w_2) + b_2)
+    transform = tf.nn.relu(tf.matmul(transform, w_3) + b_3)
+    
+    # Reshape into matrix
+    transform = tf.reshape(tranform, [-1, in_size, in_size])
+    
+    # Apply transformation (extra adittion is for identity bias)
+    outputs = tf.matmul(elems, tranform) + elems
+    
+    return outputs
+```
+
+<!-- matmul is like a nn layer -->
 
 
 #### Self attention
