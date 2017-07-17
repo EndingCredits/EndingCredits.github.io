@@ -292,10 +292,11 @@ This is done as follows:
 3.) For each pair of elements `x_i` and `x_j` we generate a weight `w_i_j` by taking the dot product of the query vector `x_i_q` of `x_i` and the key vector `x_j_k` of `x_j` (and then passing it through a softmax). This value `w_i_j` corresponds to how much the element `x_i` 'pays attention' to `x_j`.
 4.) For each element `x_i`, we produce a context `c_i` by multiplying the values of all elements by the corresponding weight `w_i_j`, and summing them together, *i.e.* `c_i = sum(w_i_j * x_j_v)`.
 
+> In fact, instead of taking the dot product of the whole kquery/key, google split these into a number of 'heads', which act like separate attention mechanisms. This heads can then be joined back together using a simple concatenation.   
 <!-- Code -->
 
 <!-- Max pooiling as global attention -->
-In many ways, self attention can be considered an extension of global pooling. In fact, if we use sum pooling, then this is equivalent to using self-attention with all attended weights set to 1.
+In many ways, self attention can be considered an extension of global pooling. In fact, if we use sum pooling, then this is equivalent to using self-attention with all attended weights set to 1. However, self-attention has one key drawback: its computational complexity is of the order of the square of the number of elements! This means that for large input sets (of about 100 or more elements) self attention is significantly slower than pooling-based set networks.
 
 #### Heirarchical set networks
 
