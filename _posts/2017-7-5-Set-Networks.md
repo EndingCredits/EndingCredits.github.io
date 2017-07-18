@@ -12,8 +12,8 @@ Currently WIP, all feedback welcome.
 
 A deep-learning-o-mancer's toolkit is seemingly endless. Simple spells, such as batch-normalisation and skip connections are joined by arcane magic such as  (not to mention the six hundred and sixty six different species of GAN).
 Needless to say, the number of different model architectures is also collosal.
-However, broadly speaking, we can divide most commonly used deep learning models into one of three categories: those designed to operate on feature vectors (*e.g.* fully connected), those designed to operate on tensor-structured data such as images, or audio (*e.g.* CNNs), and those designed to work on sequential data (*e.g.* RNNs).
 
+However, broadly speaking, we can divide most commonly used deep learning models into one of three categories: those designed to operate on feature vectors (*e.g.* fully connected), those designed to operate on tensor-structured data such as images, or audio (*e.g.* CNNs), and those designed to work on sequential data (*e.g.* RNNs).
 While this is far from a comprehensive classification of all models (doubtless large numbers of networks exist for a whole host of different esoteric input formats, not to mention the dreaded [chimera](https://arxiv.org/abs/1706.05137)), but it does seem to feature one glaring ommission: models designed to operate on sets.
 
 Enter the set network!
@@ -37,11 +37,11 @@ Enter the set network!
        Even closely related papers miss this link.
          Papers don't mention trying different layer types
      -->
-Sometimes we want to work with input data given as sets, for example a list of possible binding sites for a protein, or a set of point in a point cloud. Even when data isn't given explicitly as a set, it can often be useful to represent it as one, *e.g.* we can specify a graph as a set of edges and vertices. But how do we feed a set into a neural network?
+Sometimes we want to work with input data given as sets, for example a list of possible binding sites of a protein, or a set of points in a point cloud. Even when data isn't given explicitly as a set, it can often be useful to represent it as one, *e.g.* we can specify a graph as a set of edges and vertices. But how do we feed a set into a neural network?
 
 > In fact the problem of classifying sets has already been studied extensively via the field Multiple-Instance Learning (MIL). MIL is typically defined as a classification task where the objective is to learn a mapping from sets (known as bags) of elements to a single label. However, MIL also includes the assumption that bag labels are dependent only on some function of hidden element labels, *e.g.* a bag label is y only if it contains an element with label y. We are interested in more general problems where it may not be possible to determine the set label by looking at each element individually.
 
-An obvious first step is to treat the set as a sequence (by assigning an arbitrary ordering) and input it into a squential model. However, the choice or ordering can have a [big impact on performance](https://arxiv.org/abs/1511.06391), and sequential models ar poor at modelling long-rage dependencies, so if two closely related elements end up at opposite ends of the sequence, their relationship may be missed. Ideally we would like a similar model where the output is independent of the order of the inputs, that is, a set network. ut what would such a model look like?
+An obvious first step is to treat the set as a sequence (by assigning an arbitrary ordering) and input it into a squential model, luch as an LSTM Recurrent Neural Network. However, the choice or ordering can have a [big impact on performance](https://arxiv.org/abs/1511.06391), and sequential models ar poor at modelling long-rage dependencies, so if two closely related elements end up at opposite ends of the sequence, their relationship may be missed. Ideally we would like a similar model where the output is independent of the order of the inputs, that is, a set network. But what would such a model look like?
 
 As it turns out, a variety of different researchers have already run into, and managed to solve this problem in a variety of different ways. However, in most instances there seems to be little awarness of others' proposed solutions and most approaches seem to be developed largely independently (*e.g.* [Deep Sets](https://arxiv.org/abs/1611.04500) and [Pointnet](https://arxiv.org/abs/1612.00593) both employ the same novel approach to 3D object classification on the same dataset).
 Most of these approaches are largely based on the same principles (*i.e.* the deep set network we describe below), but many also feature unique innovations (as well as small tweaks and optimisations) that could also be applied to other problems.
@@ -62,9 +62,9 @@ However, I personally feel that set networks, of all their various shapes and gu
        Not an attempt to describe all possible types.
      -->
 
-Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to the conectps and a guide to implementing such networks in a practical setting. For more details overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
+Rather than an authorative overview of set networks (which I have neither the time nor expertise to write), the reader should consider this a basic introduction to the concepts and a guide to implementing such networks in a practical setting. For more thorough overviews and explanations, I encourage readers to go and read the various papers referred to in this post.
 
-Throughout this post I'll be including code snippets (in my preferred combination of python/tensorflow) demonstrating how various building blocks can be implemented. Sometime in the future, I hope to accompany this with some example esperimental code (in the meantime, [this poorly documented repository](https://github.com/EndingCredits/EmbeddingNetwork) can be referred to in an emergency).
+Throughout this post I'll be including code snippets (in python/tensorflow) demonstrating how various building blocks can be implemented. Sometime in the future, I hope to accompany this with some example experimental code, but in the meantime [this poorly documented repository](https://github.com/EndingCredits/EmbeddingNetwork can be referred to in an emergency.
 I'll also be including some of my own notes, both practical and theoretical. These can be found in the grey textboxes.
 
 
@@ -78,24 +78,34 @@ This post is very much a work in progress, and will be continually updated for t
 
 ## The simple set network
 <!-- Definition of set network: equivariance and symmetry -->
-Just as CNNs operate over fixed-size vectors arranged into a grid pattern, and RNNs operate over fixed-size vectors arranged into a sequence, we are interested in models that can operate over fixed-size vectors organised a set.
+Just as CNNs operate over fixed-size vectors arranged into a grid pattern, and RNNs operate over fixed-size vectors arranged into a sequence, we are interested in models that can operate over fixed-size vectors organised as a set.
 
-Unfortunately we're working with *tensorflow*, not *setflow* so we can't simply input a set into our network. We can get around this by representing our set as a tensor: Given a set of vectors `{v1, v2, ..., vn}` we can easily turn this into a single tensor by concatenating the vectors along an extra *0*th dimension. Note (and this will be important later) that a given set can have multiple representations since we can permute elements of a set without changing it, hence any permutation along the *0*th axis of our tensor is a representation of the same set.
+Our first barrier is how do we represent sets in code: unfortunately we're working with *tensorflow*, not *setflow* so we can't simply input a set into our network. We can get around this by representing our set as a tensor: Given a set of vectors `{v1, v2, ..., vn}` we can easily turn this into a single tensor by concatenating the vectors along an extra 0th dimension. Note (and this will be important later) that a given set can have multiple representations since we can permute elements of a set without changing it, hence any permutation along the 0th axis of our tensor is a representation of the same set.
 
 >If our set is given as a python list, `set = [v1, v2, ..., vn]`, we can use the tersorflow operation `tensor = tf.pack(set)`. However, in practice, it's easier to do this in either python or numpy as part of the data-preparation process, and feed tensorflow a single tensor.
 
+This may seem like a trivial problem, but representing sets in terms of vectors makes the maths a lot easier to define. Instead of trying to work out how to define how our model should operate over sets of vectors, we can simply define a set network to be a network that operates over vectors of vectors (*i.e.* tensors), with some additional properties.
+
+Let's say our model is a function ![`f_k: X^n \rightarrow \mathbf Y`](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where ![`X = \mathbf R^m`](http://latex2png.com/output//latex_c57aa0f15ade650827acab29ac0c2b80.png) and ![`Y = \mathbf R^{D_{OUT}}`](http://latex2png.com/output//latex_e1024b96186dc05914c43f913950abc0.png). Now we want the output to be invariant to different representations of the same the input set, *i.e.* permuting the order of the inputs should not affect the output. In fact, this property already has a mathematical term: we want f to be symmetric.
+
+In fact, we really need a sequence of functions ![`\{ f_k: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_13d485e1d43bd55ca4aa3b87a18175f7.png) as we want to handle sets with different lengths k. Furthermore, there should be a 'meaningful' relationship between these different `f_k`'s: Our model should behave similarly with 4 input elements as 5 input elements. Unfortunately, it's not quite clear what this relationship should look like mathematically, so for now we just have to use our best judgement.
+
+
 #### Pooling
 
-Let's assume for now that we want our model to produce a single fixed-size output vector, *i.e.* our model is a function ![`f_k: X^n \rightarrow \mathbf Y`](http://latex2png.com/output//latex_761706b5d5ccc71b57d611ff7b188243.png), where ![`X = \mathbf R^m`](http://latex2png.com/output//latex_c57aa0f15ade650827acab29ac0c2b80.png) and ![`Y = \mathbf R^{D_{OUT}}`](http://latex2png.com/output//latex_e1024b96186dc05914c43f913950abc0.png) (in fact, we really need a sequence of functions ![`\{ f_k: X^k \rightarrow \mathbf Y \}_{k \in \mathbf N}`](http://latex2png.com/output//latex_13d485e1d43bd55ca4aa3b87a18175f7.png) as we want to handle sets with different lengths k). We want the output to be invariant to different representations of the same the input set. Hence, we are looking for symmetric functions of vectors.
-
+So we are looking for symmetric functions on vectors which can take an arbitrary number of inputs.
 Fortunately some very simple candidates for these already exist, including most *tensorflow* ops beginning with `tf.reduce_`.
 By reducing along the 0th axis these operations transform an n by m dimensional tensor into a single m-dimensional vector.
 <!-- Pooling operations are the bread of set networks, they are what enable to turn set into vector --> Pooling operations, such as these, are the bread of set networks; they enable us to map an arbitrary sized set of vectors into a single vector of the same dimension.
-For now we will only consider max pooling, *i.e.* `tf.reduce_max`, but most of the following will also apply to alternatives such as `tf.reduce_sum`, and `tf.reduce_sum`.
+
+For now we will only consider max pooling, *i.e.* `tf.reduce_max`, but most of the following will also apply to alternatives such as `tf.reduce_sum`, and `tf.reduce_mean`.
 
 <!--  Notes on how to compose from simple arithmentic functions.
       In fact we can devise such an function using any associative symmetric operation.
       Given an associative symmetric operation on pairs of vectors, we can form a pooling operation by applying ... -->
+> One thing most of these operations have in common is that they can be computed by repeatedly applying a binary operation (*i.e.* a function that takes two inputs and produces one ouput from the same set) in a (scan)[https://en.wikipedia.org/wiki/Prefix_sum].
+> So long as this operation is associative and commutative, the final result of the scan will be symmetric. A simple example of this process would be computing the sum of a set of numbers, where our elementary operation is simply the pairwise sum `o(a,b) = a + b`.
+> This gives us a good starting points for defining new types of 'pooling' operations in future.
 
 However, naively applying max pooling to our input tensor is unlikely to give us good results. For example, if our input is a set of points (a point-cloud), then max pooling will give us one half of the bounding box of all points. While this is useful information, it doesn't tell us anything about the structure of the points. We need to first transorm our input points where max pooling preserves more information about the structure of the set. Additionally, max pooling doesn't have any trainable parameters, so we need an additional trainable component to turn our architecture into a trainable model.
 
