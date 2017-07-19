@@ -365,16 +365,21 @@ Recently Google published a paper titled [Attention Is All You Need](https://arx
 Unlike the set networks described here, the transformer network doesn't use any kind of global pooling. Instead it relies on a mechanism called 'self attention'. Rather than generating a global context, which is applied to all elements, each element produces its own context based on other elements in the set. This is done by using an attention mechanism, where each element controls how strongly other elements in the set contribute to its own context. Attention mechanism are often used in sequence-to-sequence tasks where the output elements are allowed to attend to the input elements. What transformer net does is also allow input, and output elements to attend to themselves.
 
 This is done as follows:
-1.) Each element produces a key, and a value which are fixed sized vectors.
-2.) Each element also produces a query, which is a fixed sized vector the same size as the key.
-3.) For each pair of elements `x_i` and `x_j` we generate a weight `w_i_j` by taking the dot product of the query vector `x_i_q` of `x_i` and the key vector `x_j_k` of `x_j` (and then passing it through a softmax). This value `w_i_j` corresponds to how much the element `x_i` 'pays attention' to `x_j`.
-4.) For each element `x_i`, we produce a context `c_i` by multiplying the values of all elements by the corresponding weight `w_i_j`, and summing them together, *i.e.* `c_i = sum(w_i_j * x_j_v)`.
+1. Each element produces a key, and a value which are fixed sized vectors.
+2. Each element also produces a query, which is a fixed sized vector the same size as the key.
+3. For each pair of elements `x_i` and `x_j` we generate a weight `w_i_j` by taking the dot product of the query vector `x_i_q` of `x_i` and the key vector `x_j_k` of `x_j` (and then passing it through a softmax). This value `w_i_j` corresponds to how much the element `x_i` 'pays attention' to `x_j`.
+4. For each element `x_i`, we produce a context `c_i` by multiplying the values of all elements by the corresponding weight `w_i_j`, and summing them together, *i.e.* `c_i = sum(w_i_j * x_j_v)`.
 
-> In fact, instead of taking the dot product of the whole kquery/key, google split these into a number of 'heads', which act like separate attention mechanisms. This heads can then be joined back together using a simple concatenation.   
+> In fact, instead of taking the dot product of the whole kquery/key, Google split these into a number of 'heads', which act like separate attention mechanisms. This heads can then be joined back together using a simple concatenation.   
 <!-- Code -->
 
-<!-- Max pooiling as global attention -->
-In many ways, self attention can be considered an extension of global pooling. In fact, if we use sum pooling, then this is equivalent to using self-attention with all attended weights set to 1. However, self-attention has one key drawback: its computational complexity is of the order of the square of the number of elements! This means that for large input sets (of about 100 or more elements) self attention is significantly slower than pooling-based set networks.
+Self-attention can be used to replace the deep set mechanisms described above, however, it has one key drawback: its computational complexity is of the order of the square of the number of elements! This means that for large input sets (of about 100 or more elements) self attention is significantly slower than 'conventional' pooling-based set networks.
+
+As well as self attention, we can also apply global attention, where we replace our set of query vectors with a single global query `q`. Rather than computing a context for each element, we instead compute a single gloabl context `c` by obtaining a weight for each vector `x_i` as before. 
+This global attention can be considered an extension of global pooling. In fact, if we use sum pooling is equivalent to using self-attention with all attended weights set to 1.
+<!-- However, if we use a fixed query vector `q` then global attention doesn't offer any real difference to pooling; different elements can already -->
+
+
 
 #### Heirarchical set networks
 
